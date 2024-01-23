@@ -1,6 +1,6 @@
 use anyhow::Result;
+use eigendatestharness::{DAClient, EigenDA, EigenDAConfig};
 use std::vec::Vec;
-use eigendatestharness::{EigenDA, EigenDAConfig, DAClient};
 
 #[derive(clap::Parser)]
 struct Cli {
@@ -8,6 +8,10 @@ struct Cli {
     metrics_port: u16,
     #[arg(long, global = true)]
     stop: bool,
+
+    #[arg(long, global = true, default_value_t = std::u32::MAX)]
+    run_for_secs: u32,
+
     #[command(subcommand)]
     cmd: Command,
 }
@@ -34,11 +38,12 @@ async fn eigendastore(da: &EigenDA, data: &[u8]) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("LayerN Rollman ");
+    println!("EigenDA rust client");
     let Cli {
         metrics_port,
         stop,
         cmd,
+        run_for_secs,
     } = <Cli as clap::Parser>::parse();
     println!("{cmd:?}");
 
@@ -60,6 +65,7 @@ async fn main() -> Result<()> {
 
     let da = EigenDA::new(da_config, prometheus::default_registry());
 
+    let prog_start = std::time::Instant::now();
     loop {
         let start = std::time::Instant::now();
         match cmd {
@@ -69,6 +75,10 @@ async fn main() -> Result<()> {
         println!("Took {:?}", start.elapsed());
         if stop {
             break;
+        }
+        if prog_start.elapsed() > std::time::Duration::from_secs(run_for_secs.into()) {
+            println!("Terminating after {run_for_secs} seconds");
+            break ();
         }
     }
 
