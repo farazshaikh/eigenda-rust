@@ -1,4 +1,4 @@
-### Eigen DA rust client and test harness
+# Eigen DA rust client and test harness
 
 Generates workload tests for Eigen DA.
 
@@ -14,9 +14,9 @@ cargo run -- --help
 ## --- Quick test-----
 cargo run -- eigen-da-disperse
 
-Run 3MB dispersals on eigen DA. Each request to eigen da is limited to a 512K chunk.
-Requests are rate limited to 6 requests per second, and 6 max out standing requests per second.
+Run 3MB dispersals on eigen DA. Each request to Eigen da is limited to a 512K chunk.
+Requests are rate limited to 6 requests per second and 6 max outstanding requests per second.
 
 ## TODO:
-The rate limits are hard coded in the program, other params can be specified on command line.
+The rate limits are hardcoded in the program, other params can be specified on the command line.
 
