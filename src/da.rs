@@ -69,9 +69,6 @@ pub struct EigenDAConfig {
     #[arg(long, default_value_t = 2000)]
     disperser_retry_delay_ms: u32,
 
-    #[arg(long, default_value_t = 6)]
-    max_disperser_requests: usize,
-
     #[arg(long, default_value_t = 25)]
     adversary_threshold: u32,
 
@@ -83,6 +80,22 @@ pub struct EigenDAConfig {
 
     #[arg(long, default_value_t = 524288)]
     pub chunk_size: usize,
+
+    #[arg(
+        long,
+        global = true,
+        default_value_t = 6,
+        help = "request per second issued to EigenDA"
+    )]
+    rps: u8,
+
+    #[arg(
+        long,
+        global = true,
+        default_value_t = 6,
+        help = "max outstanding requests to EigenDA"
+    )]
+    max_out_standing: u8,
 }
 
 impl Default for EigenDAConfig {
@@ -91,11 +104,12 @@ impl Default for EigenDAConfig {
             url: "https://disperser-goerli.eigenda.xyz:443".to_string(),
             disperser_retry_delay_ms: 1000,
             status_retry_delay_ms: 2000,
-            max_disperser_requests: 1,
             adversary_threshold: 25,
             quorum_threshold: 50,
             block_size: 12_582_912,
             chunk_size: 256,
+            rps: 6,
+            max_out_standing: 6,
         }
     }
 }
@@ -104,12 +118,13 @@ impl EigenDA {
     #[allow(dead_code)]
     pub fn new(config: EigenDAConfig, metrics_registry: &Registry) -> Self {
         let clock = governor::clock::DefaultClock::default();
+        let rps = std::num::NonZeroU32::new(config.rps as u32).expect("rps must be non-zero");
         let drl: DefaultDirectRateLimiter =
-            RateLimiter::direct_with_clock(Quota::per_second(nonzero_ext::nonzero!(6u32)), &clock);
-        let max_disperser_requests = config.max_disperser_requests;
+            RateLimiter::direct_with_clock(Quota::per_second(rps), &clock);
+        let max_out_standing = config.max_out_standing;
         Self {
             config,
-            disperser_permits: Semaphore::new(max_disperser_requests),
+            disperser_permits: Semaphore::new(max_out_standing as usize),
             disperser_rate_limiter: drl,
             metrics: DAMetrics::new(metrics_registry),
         }

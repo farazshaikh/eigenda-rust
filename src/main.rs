@@ -4,13 +4,31 @@ use std::vec::Vec;
 
 #[derive(clap::Parser)]
 struct Cli {
-    #[arg(long, global = true, default_value_t = 9148)]
+    #[arg(
+        long,
+        global = true,
+        default_value_t = 9148,
+        help = "port for prometheus metrics"
+    )]
     metrics_port: u16,
-    #[arg(long, global = true)]
+
+    #[arg(
+        long,
+        global = true,
+        help = "Stop after doing a single Eigen DA store/dipersal"
+    )]
     stop: bool,
 
-    #[arg(long, global = true, default_value_t = std::u32::MAX)]
+    #[arg(long, global = true, default_value_t = std::u32::MAX, help = "Keep running for a fixed amount of seconds")]
     run_for_secs: u32,
+
+    #[arg(
+        long,
+        global = true,
+        default_value_t = 0,
+        help = "Sleep after every data dispersal/store call"
+    )]
+    sleep_for_secs: u32,
 
     #[command(subcommand)]
     cmd: Command,
@@ -44,6 +62,7 @@ async fn main() -> Result<()> {
         stop,
         cmd,
         run_for_secs,
+        sleep_for_secs,
     } = <Cli as clap::Parser>::parse();
     println!("{cmd:?}");
 
@@ -79,6 +98,10 @@ async fn main() -> Result<()> {
         if prog_start.elapsed() > std::time::Duration::from_secs(run_for_secs.into()) {
             println!("Terminating after {run_for_secs} seconds");
             break ();
+        }
+
+        if sleep_for_secs != 0 {
+            tokio::time::sleep(std::time::Duration::from_secs(sleep_for_secs.into())).await;
         }
     }
 
